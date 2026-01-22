@@ -13,7 +13,9 @@ while filepath is None or not os.path.exists(filepath):
 
 resolution_quality=int(input('Resolution quality (low=good, high=bad): '))
 color_quality=int(input('Color quality (low=good, high=bad): '))
-seconds_limit=int(input('Duration in seconds (blank for full video): '))
+duration=int(input('Duration in seconds (blank for full video): '))
+if duration== '':
+    duration=None
 
 size=(320//resolution_quality,222//resolution_quality)
 
@@ -34,7 +36,7 @@ while True:
     if index % divide_fps != 0:
         index += 1
         continue
-    if index>fps*9:
+    if duration is None or index>fps*duration:
         break
     inv_frame=cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
     inv_frame=cv2.resize(inv_frame,size)
