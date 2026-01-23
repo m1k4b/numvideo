@@ -12,10 +12,12 @@ while filepath is None or not os.path.exists(filepath):
     first_time=False
 
 resolution_quality=int(input('Resolution quality (low=good, high=bad): '))
-color_quality=int(input('Color quality (low=good, high=bad): '))
-duration=int(input('Duration in seconds (blank for full video): '))
+color_quality=float(input('Color quality (low=good, high=bad): '))
+duration=input('Duration in seconds (blank for full video): ')
 if duration== '':
     duration=None
+else:
+    duration=float(duration)
 
 size=(320//resolution_quality,222//resolution_quality)
 
@@ -36,7 +38,7 @@ while True:
     if index % divide_fps != 0:
         index += 1
         continue
-    if duration is None or index>fps*duration:
+    if duration is not None and index>fps*duration:
         break
     inv_frame=cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
     inv_frame=cv2.resize(inv_frame,size)
@@ -46,8 +48,6 @@ while True:
         for x in range(width):
             r,g,b=int(inv_frame[y][x][0]),int(inv_frame[y][x][1]),int(inv_frame[y][x][2])
             hex_code=str(format((r+g+b)//3,'02x'))
-            if len(hex_code) != 2:
-                print(hex_code)
             converted+=hex_code
     index += 1
     converted_frames.append(converted)
@@ -62,7 +62,7 @@ if len(converted_frames)%part_len != 0:
 
 text_parts=""
 for part in parts:
-    text_parts += f'part="{part}"\nread(decode(part))\n'
+    text_parts += f'part=decode("{part}")\nlast_frame=read(part,last_frame)\n'
 
 embed=f"""
 import kandinsky as kd
@@ -92,7 +92,7 @@ def decode(video):
         converted_video.append(decoded_frame)
     return converted_video
 
-def read(video):
+def read(video,last_frame_):
     color_quality={color_quality}
     fps={fps/divide_fps}
 
@@ -100,7 +100,6 @@ def read(video):
 
     index=0
 
-    last_frame=None
     while True:
         if index>=len(video):
             break
@@ -109,8 +108,8 @@ def read(video):
         for x in range(size[0]):
             for y in range(size[1]):
                 color = frame[x][y]
-                if last_frame is not None:
-                    if sim(color,last_frame[x][y])<color_quality:
+                if last_frame_ is not None:
+                    if sim(color,last_frame_[x][y])<color_quality:
                         continue
                 kd.fill_rect(int(x*p_size[0]),int(y*p_size[1]),int(p_size[0]),int(p_size[1]),color)
         end = time.monotonic()
@@ -120,9 +119,11 @@ def read(video):
         else:
             jump=int(abs(pause)/(1/fps))
             index+=jump
-        last_frame=dict(frame)
+        last_frame_=dict(frame)
         index+=1
+    return last_frame_
 
+last_frame=None
 {text_parts}
 
 while True:
